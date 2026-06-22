@@ -59,6 +59,7 @@ model User {
   username     String   @unique
   password     String // hashed me bcrypt
   role         Role     @default(KAMERIER)
+  pin          String?  // PIN 4-shifror per kycje te shpejte
   aktiv        Boolean  @default(true)
   krijuarMe    DateTime @default(now())
   perditesuarMe DateTime @updatedAt

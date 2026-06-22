@@ -1,6 +1,3 @@
-// ============================================================
-// AUTH CONTEXT - Menaxhimi i sesionit dhe rolit te perdoruesit
-// ============================================================
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
 
@@ -8,29 +5,33 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [duke_u_ngarkuar, setDukeUNgarkuar] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState('dark');
 
   useEffect(() => {
-    const userIRuajtur = localStorage.getItem('kafe_nlagje_user');
-    const token = localStorage.getItem('kafe_nlagje_token');
-    if (userIRuajtur && token) {
-      setUser(JSON.parse(userIRuajtur));
-    }
-    setDukeUNgarkuar(false);
+    const savedTheme = localStorage.getItem('kafe_theme') || 'dark';
+    setTheme(savedTheme);
+    document.body.className = savedTheme === 'light' ? 'theme-light' : '';
+    setLoading(false);
   }, []);
 
-  async function login(username, password) {
-    const { data } = await api.post('/auth/login', { username, password });
+  async function loginWithPin(pin) {
+    const { data } = await api.post('/auth/login-pin', { pin });
     localStorage.setItem('kafe_nlagje_token', data.token);
-    localStorage.setItem('kafe_nlagje_user', JSON.stringify(data.user));
     setUser(data.user);
     return data.user;
   }
 
   function logout() {
     localStorage.removeItem('kafe_nlagje_token');
-    localStorage.removeItem('kafe_nlagje_user');
     setUser(null);
+  }
+
+  function toggleTheme() {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('kafe_theme', newTheme);
+    document.body.className = newTheme === 'light' ? 'theme-light' : '';
   }
 
   function kaRol(...rolet) {
@@ -38,14 +39,12 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, kaRol, duke_u_ngarkuar }}>
+    <AuthContext.Provider value={{ user, loginWithPin, logout, kaRol, loading, theme, toggleTheme }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth duhet perdorur brenda AuthProvider');
-  return ctx;
+  return useContext(AuthContext);
 }
