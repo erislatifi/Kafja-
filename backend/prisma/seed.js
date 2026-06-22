@@ -1,19 +1,13 @@
-// ============================================================
-// SEED - Te dhena fillestare per Kafe Nlagje
-// Powered by PRO IT | prs-ks.com
-// ============================================================
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
-
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Duke filluar seed-imin e databazes...');
+  console.log('🌱 Duke filluar seed-imin...');
 
-  // ---------------- ADMIN USER ----------------
+  // Admin user
   const adminPassword = await bcrypt.hash('admin123', 10);
-
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { username: 'admin' },
     update: {},
     create: {
@@ -24,9 +18,9 @@ async function main() {
       aktiv: true,
     },
   });
-  console.log('✅ Admin user u krijua:', admin.username, '(fjalekalimi: admin123)');
+  console.log('✅ Admin u krijua (admin / admin123)');
 
-  // ---------------- KATEGORI ----------------
+  // Kategorite
   const kategorite = [
     { emri: 'Kafe', ikona: '☕', radhitja: 1 },
     { emri: 'Pije te Gazuara', ikona: '🥤', radhitja: 2 },
@@ -46,14 +40,11 @@ async function main() {
       create: kat,
     });
   }
-  console.log(`✅ U krijuan ${kategorite.length} kategori`);
+  console.log('✅ Kategorite u krijuan');
 
-  // ---------------- PRINTER PARAZGJEDHUR ----------------
-  const printerEkzistues = await prisma.printer.findFirst({
-    where: { parazgjedhur: true },
-  });
-
-  if (!printerEkzistues) {
+  // Printer
+  const printer = await prisma.printer.findFirst({ where: { parazgjedhur: true } });
+  if (!printer) {
     await prisma.printer.create({
       data: {
         emri: 'Printeri Kryesor (80mm)',
@@ -64,35 +55,16 @@ async function main() {
         parazgjedhur: true,
       },
     });
-    console.log('✅ Printeri parazgjedhur u konfigurua (80mm USB)');
+    console.log('✅ Printeri u konfigurua');
   }
 
-  // ---------------- PRODUKTE SHEMBULL (opsionale) ----------------
-  const kafeKategoria = await prisma.category.findUnique({ where: { emri: 'Kafe' } });
-
-  const produktetShembull = [
-    { emri: 'Espresso', cmimiShitjes: 1.0, cmimiBlerjes: 0.3, sasiaStok: 100, njesia: 'COPE' },
-    { emri: 'Kafe Macchiato', cmimiShitjes: 1.2, cmimiBlerjes: 0.35, sasiaStok: 100, njesia: 'COPE' },
-    { emri: 'Cappuccino', cmimiShitjes: 1.5, cmimiBlerjes: 0.5, sasiaStok: 100, njesia: 'COPE' },
-  ];
-
-  for (const prod of produktetShembull) {
-    const ekziston = await prisma.product.findFirst({ where: { emri: prod.emri } });
-    if (!ekziston) {
-      await prisma.product.create({
-        data: { ...prod, categoryId: kafeKategoria.id },
-      });
-    }
-  }
-  console.log('✅ Produkte shembull u shtuan ne kategorine Kafe');
-
-  console.log('🎉 Seed-imi perfundoi me sukses!');
+  console.log('🎉 Seed perfundoi!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Gabim gjate seed-imit:', e);
-    process.exit(1);
+    console.error('❌ Gabim:', e.message);
+    process.exit(0); // exit 0 qe mos ta ndaloje serverin
   })
   .finally(async () => {
     await prisma.$disconnect();

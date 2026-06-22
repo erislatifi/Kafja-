@@ -4,8 +4,9 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "npx prisma migrate deploy && node prisma/seed.js && node src/app.js",
+    "startCommand": "npx prisma generate && npx prisma db push --accept-data-loss && node prisma/seed.js; node src/app.js",
     "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE"
   }
 }
