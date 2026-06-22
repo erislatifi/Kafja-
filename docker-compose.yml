@@ -1,0 +1,31 @@
+# ============================================================
+# KAFE NLAGJE - Docker Compose
+# Powered by PRO IT | prs-ks.com
+# ============================================================
+# Kjo nis vetem PostgreSQL ne nje container. Backend dhe frontend
+# mund te rrijne ose ne containers (shih me poshte) ose direkt me
+# Node.js / PM2 (shiko docs/INSTALIMI.md)
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kafe_nlagje_db
+    restart: always
+    environment:
+      POSTGRES_USER: kafe_user
+      POSTGRES_PASSWORD: ndrysho_kete_fjalekalim
+      POSTGRES_DB: kafe_nlagje_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - kafe_nlagje_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kafe_user -d kafe_nlagje_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kafe_nlagje_pgdata:
