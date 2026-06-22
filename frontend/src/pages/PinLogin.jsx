@@ -6,7 +6,6 @@ export default function PinLogin({ onSuccess }) {
   const [gabim, setGabim] = useState('');
   const [duke_ngarkuar, setDukeNgarkuar] = useState(false);
   const { loginWithPin, theme, toggleTheme } = useAuth();
-
   const rfidBuffer = useRef('');
   const rfidTimer = useRef(null);
   const lastKeyTime = useRef(0);
@@ -52,6 +51,7 @@ export default function PinLogin({ onSuccess }) {
   }
 
   async function kontrollo(kodi) {
+    if (!kodi || kodi.length < 4) return;
     setDukeNgarkuar(true);
     setGabim('');
     try {
@@ -64,35 +64,29 @@ export default function PinLogin({ onSuccess }) {
     } finally { setDukeNgarkuar(false); }
   }
 
+  const btnStyle = {
+    width: 80, height: 80, borderRadius: 16,
+    background: 'var(--bg2)', border: '1.5px solid var(--bd)',
+    color: 'var(--tx)', fontSize: 24, fontWeight: 700,
+    cursor: 'pointer', boxShadow: 'var(--sh)', transition: 'all 0.1s'
+  };
+
+  const btnPress = (e) => { e.currentTarget.style.background='var(--lm)'; e.currentTarget.style.color='var(--ld)'; e.currentTarget.style.transform='scale(0.93)'; };
+  const btnRelease = (e) => { e.currentTarget.style.background='var(--bg2)'; e.currentTarget.style.color='var(--tx)'; e.currentTarget.style.transform='scale(1)'; };
+
   return (
-    <div style={{
-      minHeight: '100vh', background: 'var(--bg)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      position: 'relative', padding: 20
-    }}>
-      {/* TEMA TOGGLE */}
-      <button onClick={toggleTheme} style={{
-        position: 'absolute', top: 16, right: 16,
-        background: 'var(--bg2)', border: '1.5px solid var(--bd)',
-        borderRadius: 20, padding: '5px 14px',
-        cursor: 'pointer', fontSize: 12, color: 'var(--mt)'
-      }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 20 }}>
+
+      <button onClick={toggleTheme} style={{ position: 'absolute', top: 16, right: 16, background: 'var(--bg2)', border: '1.5px solid var(--bd)', borderRadius: 20, padding: '5px 14px', cursor: 'pointer', fontSize: 12, color: 'var(--mt)' }}>
         {theme === 'dark' ? '☀️ Dritet' : '🌙 Nata'}
       </button>
 
-      {/* LOGO PROIT - ikona e madhe lart */}
-      <img src="/logo-p.png" alt="PRO IT"
-        style={{ width: 80, height: 80, objectFit: 'contain', marginBottom: 10 }} />
+      {/* LOGO LART */}
+      <img src="/logo-p.png" alt="PRO IT" style={{ width: 70, height: 70, objectFit: 'contain', marginBottom: 8 }} />
 
-      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--tx)', marginBottom: 4 }}>
-        Kafe Nlagje
-      </div>
-      <div style={{ fontSize: 13, color: 'var(--mt)', marginBottom: 28 }}>
-        Shkruani PIN-in tuaj
-      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--tx)', marginBottom: 20 }}>Kafe Nlagje</div>
 
-      {/* PIKAT */}
+      {/* PIKAT - pa tekst "Shkruani PIN" */}
       <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
         {[0,1,2,3].map(i => (
           <div key={i} style={{
@@ -100,13 +94,12 @@ export default function PinLogin({ onSuccess }) {
             background: i < pin.length ? 'var(--lm)' : 'transparent',
             border: `2.5px solid ${i < pin.length ? 'var(--lm)' : 'var(--bd)'}`,
             transition: 'all 0.15s',
-            boxShadow: i < pin.length ? '0 0 8px rgba(90,158,15,0.4)' : 'none'
           }} />
         ))}
       </div>
 
-      {/* GABIM / NGARKIMI */}
-      <div style={{ fontSize: 13, minHeight: 22, marginBottom: 20, textAlign: 'center', fontWeight: 600 }}>
+      {/* GABIM */}
+      <div style={{ fontSize: 13, minHeight: 22, marginBottom: 16, textAlign: 'center', fontWeight: 600 }}>
         {duke_ngarkuar
           ? <span style={{ color: 'var(--lm)' }}>Duke kontrolluar...</span>
           : <span style={{ color: 'var(--rd)' }}>{gabim}</span>}
@@ -116,28 +109,40 @@ export default function PinLogin({ onSuccess }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 80px)', gap: 10 }}>
         {[1,2,3,4,5,6,7,8,9].map(n => (
           <button key={n} onClick={() => shtoShifren(String(n))} disabled={duke_ngarkuar}
-            style={{ width: 80, height: 80, borderRadius: 16, background: 'var(--bg2)', border: '1.5px solid var(--bd)', color: 'var(--tx)', fontSize: 24, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--sh)', transition: 'all 0.1s' }}
-            onMouseDown={e => { e.currentTarget.style.background='var(--lm)'; e.currentTarget.style.color='var(--ld)'; e.currentTarget.style.transform='scale(0.93)'; }}
-            onMouseUp={e => { e.currentTarget.style.background='var(--bg2)'; e.currentTarget.style.color='var(--tx)'; e.currentTarget.style.transform='scale(1)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background='var(--bg2)'; e.currentTarget.style.color='var(--tx)'; e.currentTarget.style.transform='scale(1)'; }}
+            style={btnStyle}
+            onMouseDown={btnPress} onMouseUp={btnRelease} onMouseLeave={btnRelease}
           >{n}</button>
         ))}
-        <div />
-        <button onClick={() => shtoShifren('0')} disabled={duke_ngarkuar}
-          style={{ width: 80, height: 80, borderRadius: 16, background: 'var(--bg2)', border: '1.5px solid var(--bd)', color: 'var(--tx)', fontSize: 24, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--sh)' }}
-          onMouseDown={e => { e.currentTarget.style.background='var(--lm)'; e.currentTarget.style.color='var(--ld)'; }}
-          onMouseUp={e => { e.currentTarget.style.background='var(--bg2)'; e.currentTarget.style.color='var(--tx)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='var(--bg2)'; e.currentTarget.style.color='var(--tx)'; }}
-        >0</button>
+
+        {/* Rreshti i fundit: fshi, 0, enter */}
         <button onClick={() => { setPin(p => p.slice(0,-1)); setGabim(''); }}
-          style={{ width: 80, height: 80, borderRadius: 16, background: 'var(--bg2)', border: '1.5px solid var(--bd)', color: 'var(--tx)', fontSize: 20, cursor: 'pointer', boxShadow: 'var(--sh)' }}>⌫</button>
+          style={btnStyle}
+          onMouseDown={btnPress} onMouseUp={btnRelease} onMouseLeave={btnRelease}
+        >⌫</button>
+
+        <button onClick={() => shtoShifren('0')} disabled={duke_ngarkuar}
+          style={btnStyle}
+          onMouseDown={btnPress} onMouseUp={btnRelease} onMouseLeave={btnRelease}
+        >0</button>
+
+        {/* ENTER - butoni kryesor jeshil */}
+        <button onClick={() => kontrollo(pin)} disabled={duke_ngarkuar || pin.length < 4}
+          style={{
+            width: 80, height: 80, borderRadius: 16,
+            background: pin.length >= 4 ? 'var(--lm)' : 'var(--bg3)',
+            border: `1.5px solid ${pin.length >= 4 ? 'var(--lm)' : 'var(--bd)'}`,
+            color: pin.length >= 4 ? 'var(--ld)' : 'var(--mt)',
+            fontSize: 13, fontWeight: 800,
+            cursor: pin.length >= 4 ? 'pointer' : 'default',
+            boxShadow: 'var(--sh)', transition: 'all 0.15s'
+          }}
+        >HYRJE</button>
       </div>
 
-      {/* FOOTER me logo PROIT e plote */}
-      <div style={{ position: 'absolute', bottom: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-        <img src="/logo-proit.png" alt="PRO IT - the next generation"
-          style={{ height: 28, objectFit: 'contain', opacity: 0.75 }} />
-        <span style={{ fontSize: 10, color: 'var(--mt)' }}>prs-ks.com</span>
+      {/* FOOTER */}
+      <div style={{ position: 'absolute', bottom: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <img src="/logo-proit.png" alt="PRO IT" style={{ height: 24, objectFit: 'contain', opacity: 0.7 }} />
+        <span style={{ fontSize: 10, color: 'var(--mt)', opacity: 0.7 }}>prs-ks.com</span>
       </div>
     </div>
   );
