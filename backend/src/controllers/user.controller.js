@@ -1,6 +1,3 @@
-// ============================================================
-// USER CONTROLLER - Menaxhimi i perdoruesve (vetem ADMIN)
-// ============================================================
 const bcrypt = require('bcryptjs');
 const prisma = require('../config/db');
 
@@ -8,7 +5,7 @@ const prisma = require('../config/db');
 async function listoPerdoruesit(req, res) {
   try {
     const perdoruesit = await prisma.user.findMany({
-      select: { id: true, emri: true, username: true, role: true, aktiv: true, krijuarMe: true },
+      select: { id: true, emri: true, username: true, role: true, aktiv: true, pin: true, krijuarMe: true },
       orderBy: { krijuarMe: 'asc' },
     });
     res.json(perdoruesit);
@@ -17,26 +14,41 @@ async function listoPerdoruesit(req, res) {
   }
 }
 
-// POST /api/users
+// POST /api/users - krijon perdorues me PIN
 async function krijoPerdoruesin(req, res) {
   try {
-    const { emri, username, password, role } = req.body;
+    const { emri, username, password, role, pin } = req.body;
 
-    if (!emri || !username || !password || !role) {
-      return res.status(400).json({ gabim: 'Te gjitha fushat jane te detyrueshme.' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ gabim: 'Fjalekalimi duhet te kete te pakten 6 karaktere.' });
+    if (!emri || !username || !role) {
+      return res.status(400).json({ gabim: 'Emri, username dhe roli jane te detyrueshme.' });
     }
     if (!['ADMIN', 'MENAXHER', 'ARKATAR', 'KAMERIER'].includes(role)) {
       return res.status(400).json({ gabim: 'Roli i pavlefshem.' });
     }
+    if (!pin && !password) {
+      return res.status(400).json({ gabim: 'Duhet te vendosni PIN ose fjalekalim.' });
+    }
+    if (pin && pin.length < 4) {
+      return res.status(400).json({ gabim: 'PIN duhet te kete te pakten 4 karaktere.' });
+    }
+    if (password && password.length < 4) {
+      return res.status(400).json({ gabim: 'Fjalekalimi duhet te kete te pakten 4 karaktere.' });
+    }
 
-    const hashPassword = await bcrypt.hash(password, 10);
+    // Fjalekalimi - nese nuk jepet, perdor PIN si fjalekalim
+    const fjalekalimiPerHash = password || pin;
+    const hashPassword = await bcrypt.hash(fjalekalimiPerHash, 10);
 
     const user = await prisma.user.create({
-      data: { emri, username, password: hashPassword, role },
-      select: { id: true, emri: true, username: true, role: true, aktiv: true },
+      data: {
+        emri,
+        username,
+        password: hashPassword,
+        role,
+        pin: pin || null,
+        aktiv: true,
+      },
+      select: { id: true, emri: true, username: true, role: true, aktiv: true, pin: true },
     });
 
     res.status(201).json(user);
@@ -49,24 +61,25 @@ async function krijoPerdoruesin(req, res) {
   }
 }
 
-// PUT /api/users/:id
+// PUT /api/users/:id - edito perdoruesin + PIN
 async function perditesoPerdoruesin(req, res) {
   try {
-    const { emri, role, aktiv, password } = req.body;
+    const { emri, role, aktiv, password, pin } = req.body;
 
     const data = {};
     if (emri !== undefined) data.emri = emri;
     if (role !== undefined) data.role = role;
     if (aktiv !== undefined) data.aktiv = aktiv;
+    if (pin !== undefined) data.pin = pin || null;
     if (password) {
-      if (password.length < 6) return res.status(400).json({ gabim: 'Fjalekalimi duhet 6+ karaktere.' });
+      if (password.length < 4) return res.status(400).json({ gabim: 'Fjalekalimi duhet 4+ karaktere.' });
       data.password = await bcrypt.hash(password, 10);
     }
 
     const user = await prisma.user.update({
       where: { id: req.params.id },
       data,
-      select: { id: true, emri: true, username: true, role: true, aktiv: true },
+      select: { id: true, emri: true, username: true, role: true, aktiv: true, pin: true },
     });
 
     res.json(user);
@@ -76,16 +89,26 @@ async function perditesoPerdoruesin(req, res) {
   }
 }
 
-// DELETE /api/users/:id (soft delete)
+// DELETE /api/users/:id - fshirje e vertete
 async function fshijPerdoruesin(req, res) {
   try {
     if (req.params.id === req.user.id) {
-      return res.status(400).json({ gabim: 'Nuk mund ta çaktivizoni vetveten.' });
+      return res.status(400).json({ gabim: 'Nuk mund ta fshini vetveten.' });
     }
-    await prisma.user.update({ where: { id: req.params.id }, data: { aktiv: false } });
-    res.json({ mesazh: 'Perdoruesi u çaktivizua.' });
+    // Fshi porositë e lidhura fillimisht
+    const orders = await prisma.order.findMany({ where: { userId: req.params.id }, select: { id: true } });
+    const orderIds = orders.map(o => o.id);
+    if (orderIds.length > 0) {
+      await prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } });
+      await prisma.stockMovement.deleteMany({ where: { orderId: { in: orderIds } } });
+      await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
+    }
+    await prisma.stockMovement.deleteMany({ where: { userId: req.params.id } });
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.json({ mesazh: 'Perdoruesi u fshi.' });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ gabim: 'Perdoruesi nuk u gjet.' });
+    console.error('Gabim ne fshirjen e perdoruesit:', err);
     res.status(500).json({ gabim: 'Gabim ne server.' });
   }
 }
