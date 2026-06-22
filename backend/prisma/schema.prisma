@@ -59,7 +59,8 @@ model User {
   username     String   @unique
   password     String // hashed me bcrypt
   role         Role     @default(KAMERIER)
-  pin          String?  // PIN 4-shifror per kycje te shpejte
+  pin          String?  // PIN 4-shifror per kycje me tastiere
+  rfidKod      String?  @unique // Kodi unik i karteles RFID/NFC
   aktiv        Boolean  @default(true)
   krijuarMe    DateTime @default(now())
   perditesuarMe DateTime @updatedAt

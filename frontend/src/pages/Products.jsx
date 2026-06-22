@@ -1,296 +1,113 @@
-// ============================================================
-// PRODUCTS PAGE - Menaxhimi i produkteve
-// ============================================================
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Plus, Pencil, Trash2, X, Search } from 'lucide-react';
 
-const njesiteOpsione = [
-  { v: 'COPE', l: 'Cope' },
-  { v: 'KG', l: 'Kg' },
-  { v: 'LITER', l: 'Liter' },
-  { v: 'GRAM', l: 'Gram' },
-  { v: 'ML', l: 'Ml' },
-];
-
-function ModalProdukti({ produkti, kategorite, onMbyll, onRuajt }) {
-  const [forma, setForma] = useState(
-    produkti || {
-      emri: '',
-      categoryId: kategorite[0]?.id || '',
-      cmimiShitjes: '',
-      cmimiBlerjes: '',
-      sasiaStok: '',
-      njesia: 'COPE',
-      alarmStokuMin: 5,
-      barkod: '',
-    }
-  );
-  const [dukeRuajtur, setDukeRuajtur] = useState(false);
-  const [gabim, setGabim] = useState('');
-
-  async function dorezo(e) {
-    e.preventDefault();
-    setDukeRuajtur(true);
-    setGabim('');
-    try {
-      await onRuajt(forma);
-    } catch (err) {
-      setGabim(err.response?.data?.gabim || 'Gabim gjate ruajtjes.');
-    } finally {
-      setDukeRuajtur(false);
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-white">{produkti ? 'Edito Produktin' : 'Produkt i Ri'}</h2>
-          <button onClick={onMbyll} className="text-proit-muted hover:text-white">
-            <X size={20} />
-          </button>
-        </div>
-
-        {gabim && <div className="bg-red-900/20 border border-red-800 text-red-300 text-sm px-3 py-2 rounded-lg mb-3">{gabim}</div>}
-
-        <form onSubmit={dorezo} className="space-y-3">
-          <div>
-            <label className="label-field">Emri i Produktit *</label>
-            <input
-              required
-              className="input-field"
-              value={forma.emri}
-              onChange={(e) => setForma({ ...forma, emri: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="label-field">Kategoria *</label>
-            <select
-              required
-              className="input-field"
-              value={forma.categoryId}
-              onChange={(e) => setForma({ ...forma, categoryId: e.target.value })}
-            >
-              {kategorite.map((k) => (
-                <option key={k.id} value={k.id}>{k.ikona} {k.emri}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label-field">Çmimi i Shitjes (€) *</label>
-              <input
-                required
-                type="number"
-                step="0.01"
-                min="0"
-                className="input-field"
-                value={forma.cmimiShitjes}
-                onChange={(e) => setForma({ ...forma, cmimiShitjes: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="label-field">Çmimi i Blerjes (€)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className="input-field"
-                value={forma.cmimiBlerjes || ''}
-                onChange={(e) => setForma({ ...forma, cmimiBlerjes: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            {!produkti && (
-              <div>
-                <label className="label-field">Stoku Fillestar</label>
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  className="input-field"
-                  value={forma.sasiaStok}
-                  onChange={(e) => setForma({ ...forma, sasiaStok: e.target.value })}
-                />
-              </div>
-            )}
-            <div>
-              <label className="label-field">Njesia</label>
-              <select
-                className="input-field"
-                value={forma.njesia}
-                onChange={(e) => setForma({ ...forma, njesia: e.target.value })}
-              >
-                {njesiteOpsione.map((n) => (
-                  <option key={n.v} value={n.v}>{n.l}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label-field">Alarm Min.</label>
-              <input
-                type="number"
-                step="0.001"
-                min="0"
-                className="input-field"
-                value={forma.alarmStokuMin}
-                onChange={(e) => setForma({ ...forma, alarmStokuMin: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="label-field">Barkodi (opsional)</label>
-            <input
-              className="input-field"
-              value={forma.barkod || ''}
-              onChange={(e) => setForma({ ...forma, barkod: e.target.value })}
-            />
-          </div>
-
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onMbyll} className="btn-secondary flex-1 justify-center flex">
-              Anulo
-            </button>
-            <button type="submit" disabled={dukeRuajtur} className="btn-primary flex-1 justify-center flex">
-              {dukeRuajtur ? 'Duke ruajtur...' : 'Ruaj'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+const njesitet = [{ v: 'COPE', l: 'Cope' }, { v: 'KG', l: 'Kg' }, { v: 'LITER', l: 'Liter' }, { v: 'GRAM', l: 'Gram' }, { v: 'ML', l: 'Ml' }];
 
 export default function Products() {
   const [produktet, setProduktet] = useState([]);
   const [kategorite, setKategorite] = useState([]);
   const [kerkimi, setKerkimi] = useState('');
-  const [dukeNgarkuar, setDukeNgarkuar] = useState(true);
-  const [modalHapur, setModalHapur] = useState(false);
-  const [produktiNeEditim, setProduktiNeEditim] = useState(null);
+  const [modal, setModal] = useState(false);
+  const [produktiEdit, setProduktiEdit] = useState(null);
+  const [forma, setForma] = useState({ emri: '', categoryId: '', cmimiShitjes: '', cmimiBlerjes: '', sasiaStok: 0, njesia: 'COPE', alarmStokuMin: 5, barkod: '' });
+  const [gabim, setGabim] = useState('');
+  const [duke_ruajtur, setDukeRuajtur] = useState(false);
 
-  useEffect(() => {
-    ngarko();
-  }, []);
+  useEffect(() => { ngarko(); }, []);
 
   async function ngarko() {
-    setDukeNgarkuar(true);
-    const [resProd, resKat] = await Promise.all([api.get('/products'), api.get('/products/categories/all')]);
-    setProduktet(resProd.data);
-    setKategorite(resKat.data);
-    setDukeNgarkuar(false);
+    const [r1, r2] = await Promise.all([api.get('/products'), api.get('/products/categories/all')]);
+    setProduktet(r1.data);
+    setKategorite(r2.data);
+    if (r2.data.length > 0) setForma(f => ({ ...f, categoryId: f.categoryId || r2.data[0].id }));
   }
 
-  async function ruajProduktin(forma) {
-    if (forma.id) {
-      await api.put(`/products/${forma.id}`, forma);
-    } else {
-      await api.post('/products', forma);
-    }
-    setModalHapur(false);
-    setProduktiNeEditim(null);
-    ngarko();
+  function hapModal(p = null) {
+    setProduktiEdit(p);
+    setForma(p ? { emri: p.emri, categoryId: p.categoryId, cmimiShitjes: p.cmimiShitjes, cmimiBlerjes: p.cmimiBlerjes || '', sasiaStok: p.sasiaStok, njesia: p.njesia, alarmStokuMin: p.alarmStokuMin, barkod: p.barkod || '' }
+      : { emri: '', categoryId: kategorite[0]?.id || '', cmimiShitjes: '', cmimiBlerjes: '', sasiaStok: 0, njesia: 'COPE', alarmStokuMin: 5, barkod: '' });
+    setGabim(''); setModal(true);
   }
 
-  async function fshijProduktin(id) {
-    if (!confirm('A jeni te sigurt qe doni ta çaktivizoni kete produkt?')) return;
-    await api.delete(`/products/${id}`);
-    ngarko();
+  async function ruaj(e) {
+    e.preventDefault(); setGabim(''); setDukeRuajtur(true);
+    try {
+      if (produktiEdit) await api.put(`/products/${produktiEdit.id}`, forma);
+      else await api.post('/products', forma);
+      setModal(false); ngarko();
+    } catch (err) { setGabim(err.response?.data?.gabim || 'Gabim.'); }
+    finally { setDukeRuajtur(false); }
   }
 
-  const produktetFiltruara = produktet.filter((p) => p.emri.toLowerCase().includes(kerkimi.toLowerCase()));
+  const lista = produktet.filter(p => p.emri.toLowerCase().includes(kerkimi.toLowerCase()));
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-bold text-white">Produktet</h1>
-        <button
-          onClick={() => {
-            setProduktiNeEditim(null);
-            setModalHapur(true);
-          }}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus size={18} /> Produkt i Ri
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--tx)' }}>Produktet & Pijet</div>
+        <button onClick={() => hapModal()} className="btn-primary">+ Produkt i Ri</button>
       </div>
 
-      <div className="relative mb-4 max-w-sm">
-        <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-proit-muted" />
-        <input
-          className="input-field pl-10"
-          placeholder="Kerko produkt..."
-          value={kerkimi}
-          onChange={(e) => setKerkimi(e.target.value)}
-        />
-      </div>
+      <input type="text" value={kerkimi} onChange={e => setKerkimi(e.target.value)}
+        placeholder="Kerko produkt..." style={{ maxWidth: 260, marginBottom: 14 }} />
 
-      <div className="card p-0 overflow-hidden">
-        {dukeNgarkuar ? (
-          <div className="p-8 text-center text-proit-muted">Duke u ngarkuar...</div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-proit-dark border-b border-proit-border">
-              <tr className="text-left text-proit-muted">
-                <th className="px-4 py-3 font-medium">Emri</th>
-                <th className="px-4 py-3 font-medium">Kategoria</th>
-                <th className="px-4 py-3 font-medium text-right">Çmimi Shitjes</th>
-                <th className="px-4 py-3 font-medium text-right">Stoku</th>
-                <th className="px-4 py-3 font-medium text-center">Statusi</th>
-                <th className="px-4 py-3 font-medium text-center">Veprime</th>
+      <div className="tabela">
+        <table>
+          <thead><tr><th>Emri</th><th>Kategoria</th><th>Çmimi</th><th>Stoku</th><th>Statusi</th><th>Veprime</th></tr></thead>
+          <tbody>
+            {lista.map(p => (
+              <tr key={p.id}>
+                <td style={{ fontWeight: 600 }}>{p.emri}</td>
+                <td style={{ color: 'var(--mt)' }}>{p.category?.emri}</td>
+                <td style={{ color: 'var(--lm)', fontWeight: 700 }}>{Number(p.cmimiShitjes).toFixed(2)} €</td>
+                <td style={{ color: Number(p.sasiaStok) <= Number(p.alarmStokuMin) ? 'var(--or)' : 'var(--tx)', fontWeight: 600 }}>
+                  {Number(p.sasiaStok)} {p.njesia}
+                </td>
+                <td><span className={p.aktiv ? 'badge-green' : 'badge-red'}>{p.aktiv ? 'Aktiv' : 'Jo Aktiv'}</span></td>
+                <td>
+                  <button onClick={() => hapModal(p)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--mt)' }}>✏️</button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {produktetFiltruara.map((p) => (
-                <tr key={p.id} className="border-b border-proit-border last:border-0">
-                  <td className="px-4 py-3 text-white font-medium">{p.emri}</td>
-                  <td className="px-4 py-3 text-proit-muted">{p.category?.emri}</td>
-                  <td className="px-4 py-3 text-right text-proit-lime font-semibold">{Number(p.cmimiShitjes).toFixed(2)} €</td>
-                  <td className="px-4 py-3 text-right text-white">{Number(p.sasiaStok)} {p.njesia}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`badge ${p.aktiv ? 'bg-proit-lime/20 text-proit-lime' : 'bg-red-900/30 text-red-400'}`}>
-                      {p.aktiv ? 'Aktiv' : 'Jo Aktiv'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => {
-                          setProduktiNeEditim({ ...p, categoryId: p.categoryId });
-                          setModalHapur(true);
-                        }}
-                        className="text-proit-muted hover:text-proit-lime"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button onClick={() => fshijProduktin(p.id)} className="text-proit-muted hover:text-red-400">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {modalHapur && (
-        <ModalProdukti
-          produkti={produktiNeEditim}
-          kategorite={kategorite}
-          onMbyll={() => {
-            setModalHapur(false);
-            setProduktiNeEditim(null);
-          }}
-          onRuajt={ruajProduktin}
-        />
+      {modal && (
+        <div className="modal-overlay">
+          <div className="modal-box" style={{ maxWidth: 440 }}>
+            <div className="modal-title">{produktiEdit ? 'Edito Produktin' : 'Produkt i Ri'}</div>
+            {gabim && <div style={{ color: 'var(--rd)', fontSize: 12, marginBottom: 10, background: 'rgba(220,38,38,0.08)', padding: '8px 12px', borderRadius: 8 }}>{gabim}</div>}
+            <form onSubmit={ruaj}>
+              <div className="form-group"><label className="form-label">Emri *</label><input required value={forma.emri} onChange={e => setForma({ ...forma, emri: e.target.value })} /></div>
+              <div className="form-group"><label className="form-label">Kategoria *</label>
+                <select value={forma.categoryId} onChange={e => setForma({ ...forma, categoryId: e.target.value })}>
+                  {kategorite.map(k => <option key={k.id} value={k.id}>{k.ikona} {k.emri}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="form-group"><label className="form-label">Çmimi Shitjes (€) *</label><input required type="number" step="0.01" min="0" value={forma.cmimiShitjes} onChange={e => setForma({ ...forma, cmimiShitjes: e.target.value })} /></div>
+                <div className="form-group"><label className="form-label">Çmimi Blerjes (€)</label><input type="number" step="0.01" min="0" value={forma.cmimiBlerjes} onChange={e => setForma({ ...forma, cmimiBlerjes: e.target.value })} /></div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                {!produktiEdit && <div className="form-group"><label className="form-label">Stoku Fillestar</label><input type="number" step="0.01" min="0" value={forma.sasiaStok} onChange={e => setForma({ ...forma, sasiaStok: e.target.value })} /></div>}
+                <div className="form-group"><label className="form-label">Njesia</label>
+                  <select value={forma.njesia} onChange={e => setForma({ ...forma, njesia: e.target.value })}>
+                    {njesitet.map(n => <option key={n.v} value={n.v}>{n.l}</option>)}
+                  </select>
+                </div>
+                <div className="form-group"><label className="form-label">Alarm Min.</label><input type="number" step="0.01" min="0" value={forma.alarmStokuMin} onChange={e => setForma({ ...forma, alarmStokuMin: e.target.value })} /></div>
+              </div>
+              <div className="form-group"><label className="form-label">Barkodi (opsional)</label><input value={forma.barkod} onChange={e => setForma({ ...forma, barkod: e.target.value })} /></div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+                <button type="button" onClick={() => setModal(false)} className="btn-secondary" style={{ flex: 1 }}>Anulo</button>
+                <button type="submit" disabled={duke_ruajtur} className="btn-primary" style={{ flex: 2 }}>
+                  {duke_ruajtur ? 'Duke ruajtur...' : '✓ Ruaj'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

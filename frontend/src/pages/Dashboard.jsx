@@ -1,125 +1,83 @@
-// ============================================================
-// DASHBOARD PAGE - Permbledhje + Grafika
-// ============================================================
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { DollarSign, ShoppingBag, TrendingUp, AlertTriangle } from 'lucide-react';
 
 export default function Dashboard() {
-  const [te_dhena, setTeDhena] = useState(null);
-  const [dukeNgarkuar, setDukeNgarkuar] = useState(true);
+  const [td, setTd] = useState(null);
+  const [duke_ngarkuar, setDukeNgarkuar] = useState(true);
 
   useEffect(() => {
-    api
-      .get('/reports/dashboard')
-      .then((res) => setTeDhena(res.data))
-      .finally(() => setDukeNgarkuar(false));
+    api.get('/reports/dashboard').then(r => setTd(r.data)).catch(() => {}).finally(() => setDukeNgarkuar(false));
   }, []);
 
-  if (dukeNgarkuar) {
-    return <div className="text-proit-muted">Duke u ngarkuar...</div>;
-  }
+  if (duke_ngarkuar) return <div style={{ color: 'var(--mt)', padding: 20 }}>Duke u ngarkuar...</div>;
+  if (!td) return <div style={{ color: 'var(--mt)' }}>Nuk u ngarkuan te dhenat.</div>;
 
-  if (!te_dhena) {
-    return <div className="text-red-400">Gabim ne ngarkimin e te dhenave.</div>;
-  }
-
-  const grafikuData = Object.entries(te_dhena.grafiku7Dite).map(([data, totali]) => ({
+  const grafikuData = Object.entries(td.grafiku7Dite || {}).map(([data, totali]) => ({
     data: new Date(data).toLocaleDateString('sq-AL', { day: '2-digit', month: '2-digit' }),
     totali: Math.round(totali * 100) / 100,
   }));
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-white mb-6">Dashboard</h1>
+      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--tx)', marginBottom: 18 }}>Dashboard</div>
 
       {/* KARTAT KRYESORE */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-proit-muted text-sm">Shitjet e Sotme</span>
-            <DollarSign size={18} className="text-proit-lime" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 18 }}>
+        {[
+          { label: 'Shitjet e Sotme', vlera: `${td.totaliSot?.toFixed(2)} €`, ngjyra: 'lime' },
+          { label: 'Numri i Porosive', vlera: td.numriPorosiveSot, ngjyra: '' },
+          { label: 'Produkti Kryesor', vlera: td.produktetMeShituaraSot?.[0]?.emri || '—', ngjyra: '', i_vogel: true },
+          { label: 'Stok i Ulet', vlera: td.stokUlet?.length || 0, ngjyra: 'orange' },
+        ].map((k, i) => (
+          <div key={i} className="stat-kard">
+            <div className="label">{k.label}</div>
+            <div className={`vlera ${k.ngjyra}`} style={k.i_vogel ? { fontSize: 15 } : {}}>{k.vlera}</div>
           </div>
-          <p className="text-2xl font-bold text-white">{te_dhena.totaliSot.toFixed(2)} €</p>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-proit-muted text-sm">Numri i Porosive</span>
-            <ShoppingBag size={18} className="text-proit-lime" />
-          </div>
-          <p className="text-2xl font-bold text-white">{te_dhena.numriPorosiveSot}</p>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-proit-muted text-sm">Produkti Kryesor</span>
-            <TrendingUp size={18} className="text-proit-lime" />
-          </div>
-          <p className="text-lg font-bold text-white truncate">
-            {te_dhena.produktetMeShituaraSot[0]?.emri || '—'}
-          </p>
-        </div>
-
-        <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-proit-muted text-sm">Stok i Ulet</span>
-            <AlertTriangle size={18} className="text-orange-400" />
-          </div>
-          <p className="text-2xl font-bold text-white">{te_dhena.stokUlet.length}</p>
-        </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
         {/* GRAFIKU */}
-        <div className="card col-span-2">
-          <h2 className="font-semibold text-white mb-4">Shitjet — 7 Ditet e Fundit</h2>
-          <ResponsiveContainer width="100%" height={280}>
+        <div className="kard">
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', marginBottom: 14 }}>Shitjet — 7 Ditet e Fundit</div>
+          <ResponsiveContainer width="100%" height={200}>
             <LineChart data={grafikuData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2b2f2b" />
-              <XAxis dataKey="data" stroke="#8a8f8a" fontSize={12} />
-              <YAxis stroke="#8a8f8a" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--bd)" />
+              <XAxis dataKey="data" stroke="var(--mt)" fontSize={11} />
+              <YAxis stroke="var(--mt)" fontSize={11} />
               <Tooltip
-                contentStyle={{ backgroundColor: '#1e221e', border: '1px solid #2b2f2b', borderRadius: 8 }}
-                labelStyle={{ color: '#fff' }}
-                formatter={(v) => [`${v} €`, 'Totali']}
+                contentStyle={{ background: 'var(--bg2)', border: '1px solid var(--bd)', borderRadius: 8, color: 'var(--tx)' }}
+                formatter={v => [`${v} €`, 'Totali']}
               />
-              <Line type="monotone" dataKey="totali" stroke="#a6e635" strokeWidth={2} dot={{ fill: '#a6e635' }} />
+              <Line type="monotone" dataKey="totali" stroke="var(--lm)" strokeWidth={2.5} dot={{ fill: 'var(--lm)', r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* PRODUKTET ME TE SHITURA */}
-        <div className="card">
-          <h2 className="font-semibold text-white mb-4">Me te Shitura Sot</h2>
-          <div className="space-y-3">
-            {te_dhena.produktetMeShituaraSot.length === 0 ? (
-              <p className="text-proit-muted text-sm">Asnje shitje akoma sot.</p>
-            ) : (
-              te_dhena.produktetMeShituaraSot.map((p, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <span className="text-sm text-white">{p.emri}</span>
-                  <span className="text-sm text-proit-lime font-semibold">{p.sasia}x</span>
-                </div>
-              ))
-            )}
-          </div>
+        {/* ME TE SHITURA */}
+        <div className="kard">
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', marginBottom: 12 }}>Me te Shitura Sot</div>
+          {td.produktetMeShituaraSot?.length === 0 ? (
+            <div style={{ color: 'var(--mt)', fontSize: 12 }}>Asnje shitje akoma sot.</div>
+          ) : td.produktetMeShituaraSot?.map((p, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--bd)', fontSize: 13 }}>
+              <span style={{ color: 'var(--tx)' }}>{p.emri}</span>
+              <span style={{ color: 'var(--lm)', fontWeight: 700 }}>{p.sasia}x</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* ALARM STOKU */}
-      {te_dhena.stokUlet.length > 0 && (
-        <div className="card mt-6 border-orange-800">
-          <h2 className="font-semibold text-orange-400 mb-3 flex items-center gap-2">
-            <AlertTriangle size={18} />
-            Produkte me Stok te Ulet
-          </h2>
-          <div className="grid grid-cols-3 gap-3">
-            {te_dhena.stokUlet.map((p) => (
-              <div key={p.id} className="bg-proit-dark rounded-lg px-3 py-2 flex justify-between items-center">
-                <span className="text-sm text-white">{p.emri}</span>
-                <span className="text-sm text-orange-400 font-semibold">{Number(p.sasiaStok)} {p.njesia}</span>
+      {/* ALARME STOKU */}
+      {td.stokUlet?.length > 0 && (
+        <div className="kard" style={{ borderColor: 'rgba(234,88,12,0.3)' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--or)', marginBottom: 10 }}>⚠️ Produkte me Stok te Ulet</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+            {td.stokUlet.map(p => (
+              <div key={p.id} style={{ background: 'var(--bg3)', borderRadius: 8, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <span style={{ color: 'var(--tx)' }}>{p.emri}</span>
+                <span style={{ color: 'var(--or)', fontWeight: 700 }}>{Number(p.sasiaStok)} {p.njesia}</span>
               </div>
             ))}
           </div>

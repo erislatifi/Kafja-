@@ -1,40 +1,30 @@
-// ============================================================
-// REPORTS PAGE - Raporte Ditore/Mujore + Eksport
-// ============================================================
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { FileDown, FileSpreadsheet, Calendar } from 'lucide-react';
 
-function avuiSot() {
-  return new Date().toISOString().split('T')[0];
-}
+function sot() { return new Date().toISOString().split('T')[0]; }
 
 export default function Reports() {
-  const [tab, setTab] = useState('DITOR');
-  const [data, setData] = useState(avuiSot());
-  const [raportiDitor, setRaportiDitor] = useState(null);
-  const [raportiMujor, setRaportiMujor] = useState(null);
+  const [tab, setTab] = useState('ditor');
+  const [data, setData] = useState(sot());
   const [viti, setViti] = useState(new Date().getFullYear());
   const [muaji, setMuaji] = useState(new Date().getMonth() + 1);
-  const [dukeNgarkuar, setDukeNgarkuar] = useState(true);
+  const [rd, setRd] = useState(null); // raporti ditor
+  const [rm, setRm] = useState(null); // raporti mujor
+  const [duke_ngarkuar, setDukeNgarkuar] = useState(false);
 
-  useEffect(() => {
-    if (tab === 'DITOR') ngarkoDitor();
-    else ngarkoMujor();
-  }, [tab, data, viti, muaji]);
+  useEffect(() => { ngarko(); }, [tab, data, viti, muaji]);
 
-  async function ngarkoDitor() {
+  async function ngarko() {
     setDukeNgarkuar(true);
-    const { data: res } = await api.get(`/reports/ditor?data=${data}`);
-    setRaportiDitor(res);
-    setDukeNgarkuar(false);
-  }
-
-  async function ngarkoMujor() {
-    setDukeNgarkuar(true);
-    const { data: res } = await api.get(`/reports/mujor?viti=${viti}&muaji=${muaji}`);
-    setRaportiMujor(res);
-    setDukeNgarkuar(false);
+    try {
+      if (tab === 'ditor') {
+        const { data: r } = await api.get(`/reports/ditor?data=${data}`);
+        setRd(r);
+      } else {
+        const { data: r } = await api.get(`/reports/mujor?viti=${viti}&muaji=${muaji}`);
+        setRm(r);
+      }
+    } catch { } finally { setDukeNgarkuar(false); }
   }
 
   async function eksporto(formati) {
@@ -44,85 +34,72 @@ export default function Reports() {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     const blob = await res.blob();
     const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
+    link.href = URL.createObjectURL(blob);
     link.download = `raporti-${data}.${formati === 'pdf' ? 'pdf' : 'xlsx'}`;
     link.click();
   }
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-white mb-6">Raportet</h1>
+      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--tx)', marginBottom: 18 }}>Raportet</div>
 
-      <div className="flex gap-2 mb-5">
-        <button onClick={() => setTab('DITOR')} className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'DITOR' ? 'bg-proit-lime text-proit-black' : 'bg-proit-panel text-proit-muted'}`}>
-          Raporti Ditor
-        </button>
-        <button onClick={() => setTab('MUJOR')} className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'MUJOR' ? 'bg-proit-lime text-proit-black' : 'bg-proit-panel text-proit-muted'}`}>
-          Raporti Mujor
-        </button>
+      {/* TABS */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
+        {[['ditor', 'Raporti Ditor'], ['mujor', 'Raporti Mujor']].map(([v, l]) => (
+          <button key={v} onClick={() => setTab(v)} style={{
+            padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+            background: tab === v ? 'var(--lm)' : 'var(--bg3)',
+            color: tab === v ? 'var(--ld)' : 'var(--tx)',
+            border: `1.5px solid ${tab === v ? 'var(--lm)' : 'var(--bd)'}`,
+          }}>{l}</button>
+        ))}
       </div>
 
-      {tab === 'DITOR' && (
+      {tab === 'ditor' && (
         <>
-          <div className="flex items-center gap-3 mb-5">
-            <Calendar size={18} className="text-proit-muted" />
-            <input type="date" value={data} onChange={(e) => setData(e.target.value)} className="input-field w-44" />
-            <button onClick={() => eksporto('pdf')} className="btn-secondary flex items-center gap-2 text-sm">
-              <FileDown size={16} /> PDF
+          {/* FILTRAT */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+            <input type="date" value={data} onChange={e => setData(e.target.value)} style={{ width: 160 }} />
+            <button onClick={() => eksporto('pdf')} style={{ padding: '8px 16px', background: 'var(--bg3)', border: '1.5px solid var(--bd)', borderRadius: 8, fontSize: 12, color: 'var(--tx)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              📄 PDF
             </button>
-            <button onClick={() => eksporto('excel')} className="btn-secondary flex items-center gap-2 text-sm">
-              <FileSpreadsheet size={16} /> Excel
+            <button onClick={() => eksporto('excel')} style={{ padding: '8px 16px', background: 'var(--bg3)', border: '1.5px solid var(--bd)', borderRadius: 8, fontSize: 12, color: 'var(--tx)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              📊 Excel
             </button>
           </div>
 
-          {dukeNgarkuar || !raportiDitor ? (
-            <p className="text-proit-muted">Duke u ngarkuar...</p>
-          ) : (
+          {duke_ngarkuar ? <div style={{ color: 'var(--mt)' }}>Duke u ngarkuar...</div> : rd && (
             <>
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="card">
-                  <p className="text-proit-muted text-sm mb-1">Totali i Shitjes</p>
-                  <p className="text-2xl font-bold text-proit-lime">{raportiDitor.totaliShitjes.toFixed(2)} €</p>
-                </div>
-                <div className="card">
-                  <p className="text-proit-muted text-sm mb-1">Numri i Porosive</p>
-                  <p className="text-2xl font-bold text-white">{raportiDitor.numriPorosive}</p>
-                </div>
-                <div className="card">
-                  <p className="text-proit-muted text-sm mb-1">Fitimi Ditor</p>
-                  <p className="text-2xl font-bold text-white">{raportiDitor.fitimiDitor.toFixed(2)} €</p>
-                </div>
+              {/* KARTAT */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 18 }}>
+                <div className="stat-kard"><div className="label">Totali i Shitjes</div><div className="vlera lime">{rd.totaliShitjes?.toFixed(2)} €</div></div>
+                <div className="stat-kard"><div className="label">Numri i Porosive</div><div className="vlera">{rd.numriPorosive}</div></div>
+                <div className="stat-kard"><div className="label">Fitimi Ditor</div><div className="vlera">{rd.fitimiDitor?.toFixed(2)} €</div></div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="card">
-                  <h3 className="font-semibold text-white mb-3">Sipas Kategorise</h3>
-                  <div className="space-y-2">
-                    {Object.entries(raportiDitor.sipasKategorise).map(([kat, td]) => (
-                      <div key={kat} className="flex justify-between text-sm">
-                        <span className="text-white">{kat}</span>
-                        <span className="text-proit-muted">{td.sasia} njesi — <span className="text-proit-lime font-semibold">{td.totali.toFixed(2)} €</span></span>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div className="kard">
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', marginBottom: 12 }}>Sipas Kategorise</div>
+                  {Object.entries(rd.sipasKategorise || {}).length === 0
+                    ? <div style={{ color: 'var(--mt)', fontSize: 12 }}>Asnje shitje per kete date.</div>
+                    : Object.entries(rd.sipasKategorise).map(([k, v]) => (
+                      <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--bd)', fontSize: 13 }}>
+                        <span style={{ color: 'var(--tx)' }}>{k}</span>
+                        <span style={{ color: 'var(--lm)', fontWeight: 700 }}>{v.totali?.toFixed(2)} €</span>
                       </div>
                     ))}
-                    {Object.keys(raportiDitor.sipasKategorise).length === 0 && (
-                      <p className="text-proit-muted text-sm">Asnje shitje per kete date.</p>
-                    )}
-                  </div>
                 </div>
 
-                <div className="card">
-                  <h3 className="font-semibold text-white mb-3">Produktet me te Shitura</h3>
-                  <div className="space-y-2">
-                    {raportiDitor.produktetMeShituara.map((p, i) => (
-                      <div key={i} className="flex justify-between text-sm">
-                        <span className="text-white">{i + 1}. {p.emri}</span>
-                        <span className="text-proit-lime font-semibold">{p.sasia}x — {p.totali.toFixed(2)} €</span>
+                <div className="kard">
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--tx)', marginBottom: 12 }}>Produktet me te Shitura</div>
+                  {rd.produktetMeShituara?.length === 0
+                    ? <div style={{ color: 'var(--mt)', fontSize: 12 }}>Asnje shitje per kete date.</div>
+                    : rd.produktetMeShituara?.map((p, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid var(--bd)', fontSize: 13 }}>
+                        <span style={{ color: 'var(--tx)' }}>{i + 1}. {p.emri}</span>
+                        <span style={{ color: 'var(--lm)', fontWeight: 700 }}>{p.sasia}x — {p.totali?.toFixed(2)} €</span>
                       </div>
                     ))}
-                    {raportiDitor.produktetMeShituara.length === 0 && (
-                      <p className="text-proit-muted text-sm">Asnje shitje per kete date.</p>
-                    )}
-                  </div>
                 </div>
               </div>
             </>
@@ -130,37 +107,26 @@ export default function Reports() {
         </>
       )}
 
-      {tab === 'MUJOR' && (
+      {tab === 'mujor' && (
         <>
-          <div className="flex items-center gap-3 mb-5">
-            <select className="input-field w-32" value={muaji} onChange={(e) => setMuaji(Number(e.target.value))}>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+            <select value={muaji} onChange={e => setMuaji(Number(e.target.value))} style={{ width: 160 }}>
               {Array.from({ length: 12 }, (_, i) => (
                 <option key={i + 1} value={i + 1}>
                   {new Date(2024, i).toLocaleDateString('sq-AL', { month: 'long' })}
                 </option>
               ))}
             </select>
-            <select className="input-field w-28" value={viti} onChange={(e) => setViti(Number(e.target.value))}>
-              {[2024, 2025, 2026, 2027].map((v) => <option key={v} value={v}>{v}</option>)}
+            <select value={viti} onChange={e => setViti(Number(e.target.value))} style={{ width: 120 }}>
+              {[2024, 2025, 2026, 2027].map(v => <option key={v}>{v}</option>)}
             </select>
           </div>
 
-          {dukeNgarkuar || !raportiMujor ? (
-            <p className="text-proit-muted">Duke u ngarkuar...</p>
-          ) : (
-            <div className="grid grid-cols-3 gap-4">
-              <div className="card">
-                <p className="text-proit-muted text-sm mb-1">Totali i Shitjes</p>
-                <p className="text-2xl font-bold text-proit-lime">{raportiMujor.totaliShitjes.toFixed(2)} €</p>
-              </div>
-              <div className="card">
-                <p className="text-proit-muted text-sm mb-1">Numri i Porosive</p>
-                <p className="text-2xl font-bold text-white">{raportiMujor.numriPorosive}</p>
-              </div>
-              <div className="card">
-                <p className="text-proit-muted text-sm mb-1">Mesatarja Ditore</p>
-                <p className="text-2xl font-bold text-white">{raportiMujor.mesatarjaDitore.toFixed(2)} €</p>
-              </div>
+          {duke_ngarkuar ? <div style={{ color: 'var(--mt)' }}>Duke u ngarkuar...</div> : rm && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+              <div className="stat-kard"><div className="label">Totali Mujor</div><div className="vlera lime">{rm.totaliShitjes?.toFixed(2)} €</div></div>
+              <div className="stat-kard"><div className="label">Numri i Porosive</div><div className="vlera">{rm.numriPorosive}</div></div>
+              <div className="stat-kard"><div className="label">Mesatarja Ditore</div><div className="vlera">{rm.mesatarjaDitore?.toFixed(2)} €</div></div>
             </div>
           )}
         </>
