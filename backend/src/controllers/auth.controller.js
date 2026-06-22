@@ -2,7 +2,19 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/db');
 
-// POST /api/auth/login (username + password - per admin nga web)
+function bejToken(user) {
+  return jwt.sign(
+    { id: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '12h' }
+  );
+}
+
+function pergatitPerdoruesin(u) {
+  return { id: u.id, emri: u.emri, username: u.username, role: u.role };
+}
+
+// POST /api/auth/login (username + password)
 async function login(req, res) {
   try {
     const { username, password } = req.body;
@@ -11,68 +23,34 @@ async function login(req, res) {
     if (!user || !user.aktiv) return res.status(401).json({ gabim: 'Username ose fjalekalim i pasakte.' });
     const sakte = await bcrypt.compare(password, user.password);
     if (!sakte) return res.status(401).json({ gabim: 'Username ose fjalekalim i pasakte.' });
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '12h' });
-    res.json({ token, user: { id: user.id, emri: user.emri, username: user.username, role: user.role } });
-  } catch (err) {
-    res.status(500).json({ gabim: 'Gabim ne server.' });
-  }
+    res.json({ token: bejToken(user), user: pergatitPerdoruesin(user) });
+  } catch { res.status(500).json({ gabim: 'Gabim ne server.' }); }
 }
 
 // POST /api/auth/login-pin
-// Pranon: PIN 4-shifror (tastiere) OSE kod RFID/NFC (lexues karte)
+// PIN mund te jete çfaredo gjatesie (4+)
+// Lexuesi RFID/barcode dergon numrin si input automatikisht
 async function loginWithPin(req, res) {
   try {
     const { pin } = req.body;
-    if (!pin || String(pin).length < 4) {
+    const kodi = String(pin || '').trim();
+
+    if (kodi.length < 4) {
       return res.status(400).json({ gabim: 'Kodi duhet te kete te pakten 4 karaktere.' });
     }
 
-    const kodiHyrjes = String(pin).trim();
-
-    // 1. Kërko perdoruesin me kete PIN/RFID kod ne fushen 'pin'
-    let userGjetur = await prisma.user.findFirst({
-      where: { pin: kodiHyrjes, aktiv: true }
+    // Kerko perdoruesin me kete PIN (fusha pin ne database)
+    const user = await prisma.user.findFirst({
+      where: { pin: kodi, aktiv: true }
     });
 
-    // 2. Nese nuk gjejmë me PIN direkt, kërko me RFID kod ne fushen 'rfidKod'
-    if (!userGjetur) {
-      userGjetur = await prisma.user.findFirst({
-        where: { rfidKod: kodiHyrjes, aktiv: true }
-      }).catch(() => null); // nese fusha nuk ekziston ende
+    if (!user) {
+      return res.status(401).json({ gabim: 'PIN i pasakte. Provoni perseri.' });
     }
 
-    // 3. Fallback: kontrollo si password (per admin default)
-    if (!userGjetur) {
-      const perdoruesit = await prisma.user.findMany({ where: { aktiv: true } });
-      for (const u of perdoruesit) {
-        try {
-          const match = await bcrypt.compare(kodiHyrjes, u.password);
-          if (match) { userGjetur = u; break; }
-        } catch { }
-      }
-    }
-
-    if (!userGjetur) {
-      return res.status(401).json({ gabim: 'PIN ose karta nuk u njoh.' });
-    }
-
-    const token = jwt.sign(
-      { id: userGjetur.id, role: userGjetur.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '12h' }
-    );
-
-    res.json({
-      token,
-      user: {
-        id: userGjetur.id,
-        emri: userGjetur.emri,
-        username: userGjetur.username,
-        role: userGjetur.role
-      }
-    });
+    res.json({ token: bejToken(user), user: pergatitPerdoruesin(user) });
   } catch (err) {
-    console.error('PIN/RFID login error:', err);
+    console.error('PIN login error:', err);
     res.status(500).json({ gabim: 'Gabim ne server.' });
   }
 }
@@ -91,9 +69,7 @@ async function ndryshoFjalekalimin(req, res) {
     const hashRi = await bcrypt.hash(fjalekalimiRi, 10);
     await prisma.user.update({ where: { id: req.user.id }, data: { password: hashRi } });
     res.json({ mesazh: 'Fjalekalimi u ndryshua.' });
-  } catch (err) {
-    res.status(500).json({ gabim: 'Gabim ne server.' });
-  }
+  } catch { res.status(500).json({ gabim: 'Gabim ne server.' }); }
 }
 
 module.exports = { login, meCurrent, ndryshoFjalekalimin, loginWithPin };
