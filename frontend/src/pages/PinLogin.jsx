@@ -39,13 +39,13 @@ export default function PinLogin({ onSuccess }) {
         if (rfidBuffer.current.length >= 4) kontrollo(rfidBuffer.current);
         rfidBuffer.current = '';
       }, 150);
-    } else if (/^\d$/.test(e.key)) {
+    } else if (/^\d$/.test(e.key) && pin.length < 20) {
       shtoShifren(e.key);
     }
   }
 
   function shtoShifren(n) {
-    if (duke_ngarkuar) return;
+    if (duke_ngarkuar || pin.length >= 20) return;
     setPin(p => p + n);
     setGabim('');
   }
@@ -70,9 +70,8 @@ export default function PinLogin({ onSuccess }) {
     color: 'var(--tx)', fontSize: 24, fontWeight: 700,
     cursor: 'pointer', boxShadow: 'var(--sh)', transition: 'all 0.1s'
   };
-
-  const btnPress = (e) => { e.currentTarget.style.background='var(--lm)'; e.currentTarget.style.color='var(--ld)'; e.currentTarget.style.transform='scale(0.93)'; };
-  const btnRelease = (e) => { e.currentTarget.style.background='var(--bg2)'; e.currentTarget.style.color='var(--tx)'; e.currentTarget.style.transform='scale(1)'; };
+  const bp = e => { e.currentTarget.style.background='var(--lm)'; e.currentTarget.style.color='var(--ld)'; e.currentTarget.style.transform='scale(0.93)'; };
+  const br = e => { e.currentTarget.style.background='var(--bg2)'; e.currentTarget.style.color='var(--tx)'; e.currentTarget.style.transform='scale(1)'; };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 20 }}>
@@ -81,25 +80,29 @@ export default function PinLogin({ onSuccess }) {
         {theme === 'dark' ? '☀️ Dritet' : '🌙 Nata'}
       </button>
 
-      {/* LOGO LART */}
+      {/* LOGO */}
       <img src="/logo-p.png" alt="PRO IT" style={{ width: 70, height: 70, objectFit: 'contain', marginBottom: 8 }} />
-
       <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--tx)', marginBottom: 20 }}>Kafe Nlagje</div>
 
-      {/* PIKAT - pa tekst "Shkruani PIN" */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
-        {[0,1,2,3].map(i => (
-          <div key={i} style={{
-            width: 18, height: 18, borderRadius: '50%',
-            background: i < pin.length ? 'var(--lm)' : 'transparent',
-            border: `2.5px solid ${i < pin.length ? 'var(--lm)' : 'var(--bd)'}`,
-            transition: 'all 0.15s',
-          }} />
-        ))}
+      {/* SHFAQJA E NUMRAVE — si display kalkulatori */}
+      <div style={{
+        width: 280, minHeight: 56,
+        background: 'var(--bg2)',
+        border: '2px solid var(--bd)',
+        borderRadius: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginBottom: 8,
+        padding: '0 16px',
+        boxShadow: 'var(--sh)'
+      }}>
+        {pin.length === 0
+          ? <span style={{ color: 'var(--mt)', fontSize: 16 }}>Vendosni PIN-in...</span>
+          : <span style={{ color: 'var(--tx)', fontSize: pin.length > 12 ? 16 : 22, fontWeight: 700, fontFamily: 'monospace', letterSpacing: 3, wordBreak: 'break-all', textAlign: 'center' }}>{pin}</span>
+        }
       </div>
 
-      {/* GABIM */}
-      <div style={{ fontSize: 13, minHeight: 22, marginBottom: 16, textAlign: 'center', fontWeight: 600 }}>
+      {/* GABIM / NGARKIMI */}
+      <div style={{ fontSize: 13, minHeight: 22, marginBottom: 14, textAlign: 'center', fontWeight: 600 }}>
         {duke_ngarkuar
           ? <span style={{ color: 'var(--lm)' }}>Duke kontrolluar...</span>
           : <span style={{ color: 'var(--rd)' }}>{gabim}</span>}
@@ -109,30 +112,27 @@ export default function PinLogin({ onSuccess }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 80px)', gap: 10 }}>
         {[1,2,3,4,5,6,7,8,9].map(n => (
           <button key={n} onClick={() => shtoShifren(String(n))} disabled={duke_ngarkuar}
-            style={btnStyle}
-            onMouseDown={btnPress} onMouseUp={btnRelease} onMouseLeave={btnRelease}
+            style={btnStyle} onMouseDown={bp} onMouseUp={br} onMouseLeave={br}
           >{n}</button>
         ))}
 
-        {/* Rreshti i fundit: fshi, 0, enter */}
+        {/* ⌫ | 0 | HYRJE */}
         <button onClick={() => { setPin(p => p.slice(0,-1)); setGabim(''); }}
-          style={btnStyle}
-          onMouseDown={btnPress} onMouseUp={btnRelease} onMouseLeave={btnRelease}
+          style={btnStyle} onMouseDown={bp} onMouseUp={br} onMouseLeave={br}
         >⌫</button>
 
         <button onClick={() => shtoShifren('0')} disabled={duke_ngarkuar}
-          style={btnStyle}
-          onMouseDown={btnPress} onMouseUp={btnRelease} onMouseLeave={btnRelease}
+          style={btnStyle} onMouseDown={bp} onMouseUp={br} onMouseLeave={br}
         >0</button>
 
-        {/* ENTER - butoni kryesor jeshil */}
-        <button onClick={() => kontrollo(pin)} disabled={duke_ngarkuar || pin.length < 4}
+        <button onClick={() => kontrollo(pin)}
+          disabled={duke_ngarkuar || pin.length < 4}
           style={{
             width: 80, height: 80, borderRadius: 16,
             background: pin.length >= 4 ? 'var(--lm)' : 'var(--bg3)',
             border: `1.5px solid ${pin.length >= 4 ? 'var(--lm)' : 'var(--bd)'}`,
             color: pin.length >= 4 ? 'var(--ld)' : 'var(--mt)',
-            fontSize: 13, fontWeight: 800,
+            fontSize: 12, fontWeight: 800,
             cursor: pin.length >= 4 ? 'pointer' : 'default',
             boxShadow: 'var(--sh)', transition: 'all 0.15s'
           }}
