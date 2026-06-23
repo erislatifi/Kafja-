@@ -9,31 +9,25 @@ const PRINTER_IP = process.env.PRINTER_IP || '192.168.67.48';
 const PRINTER_PORT = process.env.PRINTER_PORT || 9100;
 const CHECK_INTERVAL = parseInt(process.env.CHECK_INTERVAL || '3') * 1000;
 const BIZNESI = process.env.BIZNESI_EMRI || 'Kafe Nlagje';
-
-// Skedar lokal per porositë e printuara (nuk i printon 2 herë)
 const PRINTED_FILE = path.join(__dirname, 'printed.json');
 
 let token = null;
 let printedOrders = new Set();
 
-// Ngarko porositë e printuara nga disku
 function ngarkoPrintuarat() {
   try {
     if (fs.existsSync(PRINTED_FILE)) {
       const data = JSON.parse(fs.readFileSync(PRINTED_FILE, 'utf8'));
       printedOrders = new Set(data);
-      console.log(`📋 Porosi të printuara më parë: ${printedOrders.size}`);
+      console.log(`📋 Porosi te printuara me pare: ${printedOrders.size}`);
     }
   } catch { printedOrders = new Set(); }
 }
 
-// Ruaj porositë e printuara në disk
 function ruajPrintuarat() {
   try {
     fs.writeFileSync(PRINTED_FILE, JSON.stringify([...printedOrders]));
-  } catch (err) {
-    console.error('Gabim ruajtja printed.json:', err.message);
-  }
+  } catch {}
 }
 
 async function kycu() {
@@ -53,15 +47,13 @@ async function kycu() {
 
 async function merrPorositëRe() {
   try {
+    // Merr VETEM porositë e PERFUNDUARA që nuk i kemi printuar
     const { data } = await axios.get(`${API_URL}/orders?status=PERFUNDUAR&limit=50`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    // Kthe vetëm porositë që NUK i kemi printuar
     return data.filter(p => !printedOrders.has(p.id));
   } catch (err) {
-    if (err.response?.status === 401) {
-      await kycu();
-    }
+    if (err.response?.status === 401) await kycu();
     return [];
   }
 }
@@ -98,6 +90,7 @@ async function printoFaturen(porosia) {
     printer.println(`Data: ${new Date(porosia.krijuarMe).toLocaleString('sq-AL')}`);
     printer.println(`Kamerieri: ${porosia.user?.emri || '—'}`);
     if (porosia.tavolinaNr) printer.println(`Tavolina: ${porosia.tavolinaNr}`);
+    if (porosia.metodaPageses) printer.println(`Pagesa: ${porosia.metodaPageses === 'card' ? 'Kartë' : 'Cash'}`);
     printer.drawLine();
 
     // PRODUKTET
@@ -110,7 +103,7 @@ async function printoFaturen(porosia) {
 
     for (const item of porosia.items || []) {
       printer.tableCustom([
-        { text: String(item.emriProduktit || item.emri || '—').substring(0, 20), align: 'LEFT', width: 0.5 },
+        { text: String(item.emriProduktit || '—').substring(0, 22), align: 'LEFT', width: 0.5 },
         { text: String(Number(item.sasia)), align: 'CENTER', width: 0.15 },
         { text: `${Number(item.nentotali || 0).toFixed(2)}EUR`, align: 'RIGHT', width: 0.35 }
       ]);
@@ -134,7 +127,7 @@ async function printoFaturen(porosia) {
     printer.cut();
 
     await printer.execute();
-    console.log(`✅ U printua porosia #${porosia.numriPorosise}`);
+    console.log(`✅ U printua porosia #${porosia.numriPorosise} - Tav.${porosia.tavolinaNr || '?'}`);
     return true;
 
   } catch (err) {
@@ -145,12 +138,10 @@ async function printoFaturen(porosia) {
 
 async function loop() {
   const porosite = await merrPorositëRe();
-
   for (const porosia of porosite) {
-    console.log(`📋 Porosi e re #${porosia.numriPorosise} — ${porosia.user?.emri}`);
+    console.log(`📋 Porosi e re #${porosia.numriPorosise} - Tav.${porosia.tavolinaNr || '?'} - ${porosia.user?.emri}`);
     const sukses = await printoFaturen(porosia);
     if (sukses) {
-      // Shëno si e printuar — nuk do ta printojë sërish
       printedOrders.add(porosia.id);
       ruajPrintuarat();
     }
@@ -166,24 +157,19 @@ async function nise() {
   console.log('');
   console.log(`🌐 Backend: ${API_URL}`);
   console.log(`🖨️  Printer: ${PRINTER_IP}:${PRINTER_PORT}`);
-  console.log(`⏱️  Kontroll çdo: ${CHECK_INTERVAL / 1000} sekonda`);
+  console.log(`⏱️  Kontroll çdo: ${CHECK_INTERVAL/1000} sekonda`);
   console.log('');
 
   ngarkoPrintuarat();
 
   const kyçur = await kycu();
-  if (!kyçur) {
-    console.error('❌ Nuk u kyça. Kontrollo .env dhe provo sërish.');
-    process.exit(1);
-  }
+  if (!kyçur) { console.error('❌ Nuk u kyça.'); process.exit(1); }
 
   console.log('✅ Print Bridge aktiv — duke pritur porosi...\n');
-
   await loop();
   setInterval(loop, CHECK_INTERVAL);
 }
 
-process.on('uncaughtException', err => console.error('❌ Gabim:', err.message));
-process.on('unhandledRejection', err => console.error('❌ Promise:', err));
-
+process.on('uncaughtException', err => console.error('❌:', err.message));
+process.on('unhandledRejection', err => console.error('❌:', err));
 nise();
