@@ -13,6 +13,7 @@ import Orders from './pages/Orders';
 import Reports from './pages/Reports';
 import Users from './pages/Users';
 import Settings from './pages/Settings';
+import AdminTavolinat from './pages/AdminTavolinat';
 
 export default function App() {
   const { user, logout, loading } = useAuth();
@@ -41,7 +42,8 @@ export default function App() {
   if (!user || faza === 'pin') return <PinLogin onSuccess={onLoginSukses} />;
 
   if (faza === 'admin') {
-    const faqet = { dashboard: <Dashboard />, products: <Products />, stock: <Stock />, orders: <Orders />, reports: <Reports />, users: <Users />, settings: <Settings /> };
+    const faqet = { dashboard: <Dashboard />, products: <Products />, stock: <Stock />, orders: <Orders />, reports: <Reports />, users: <Users />, settings: <Settings />,
+      tables: <AdminTavolinat /> };
     return (
       <AdminLayout faqjaAktive={adminFaqja} onNdryshoFaqjen={setAdminFaqja} onLogout={doLogout}>
         {faqet[adminFaqja] || <Dashboard />}

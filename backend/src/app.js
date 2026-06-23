@@ -16,6 +16,7 @@ const stockRoutes = require('./routes/stock.routes');
 const orderRoutes = require('./routes/order.routes');
 const reportRoutes = require('./routes/report.routes');
 const userRoutes = require('./routes/user.routes');
+const tableRoutes = require('./routes/table.routes');
 const printerRoutes = require('./routes/printer.routes');
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/tables', tableRoutes);
 app.use('/api/printers', printerRoutes);
 
 // Health check (per Hostinger / monitorim)

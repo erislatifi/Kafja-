@@ -125,13 +125,17 @@ async function perditesoProduktin(req, res) {
 // DELETE /api/products/:id (soft delete - vetem ckatviziohet)
 async function fshijProduktin(req, res) {
   try {
-    await prisma.product.update({
-      where: { id: req.params.id },
-      data: { aktiv: false },
-    });
-    res.json({ mesazh: 'Produkti u çaktivizua me sukses.' });
+    // Provo fshirje reale
+    await prisma.stockMovement.deleteMany({ where: { productId: req.params.id } });
+    await prisma.product.delete({ where: { id: req.params.id } });
+    res.json({ mesazh: 'Produkti u fshi.' });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ gabim: 'Produkti nuk u gjet.' });
+    if (err.code === 'P2003') {
+      // Ka order items te lidhura - çaktivizo
+      await prisma.product.update({ where: { id: req.params.id }, data: { aktiv: false } });
+      return res.json({ mesazh: 'Produkti u çaktivizua (ka porosi te lidhura).' });
+    }
     res.status(500).json({ gabim: 'Gabim ne server.' });
   }
 }
