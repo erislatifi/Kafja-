@@ -2,7 +2,10 @@
 <html lang="sq">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo-p.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#5a9e0f" />
     <meta name="description" content="Kafe Nlagje POS - Powered by PRO IT" />
@@ -15,16 +18,16 @@
         background: #f5f5f5;
         display: flex; flex-direction: column;
         align-items: center; justify-content: center;
-        z-index: 9999; transition: opacity 0.3s;
+        z-index: 9999; transition: opacity 0.4s;
       }
       #splash.hide { opacity: 0; pointer-events: none; }
     </style>
   </head>
   <body>
     <div id="splash">
-      <img src="/logo-p.png" style="width:80px;margin-bottom:16px" />
-      <div style="font-family:Inter,sans-serif;font-size:20px;font-weight:800;color:#111">Kafe Nlagje</div>
-      <div style="font-family:Inter,sans-serif;font-size:12px;color:#666;margin-top:4px">Duke u ngarkuar...</div>
+      <img src="/logo-p.png" style="width:72px;margin-bottom:14px;border-radius:16px" />
+      <div style="font-family:system-ui,sans-serif;font-size:20px;font-weight:800;color:#111">Kafe Nlagje</div>
+      <div style="font-family:system-ui,sans-serif;font-size:12px;color:#888;margin-top:4px">Powered by PRO IT</div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
@@ -32,15 +35,11 @@
       window.addEventListener('load', () => {
         setTimeout(() => {
           const s = document.getElementById('splash');
-          if (s) s.classList.add('hide');
-          setTimeout(() => s && s.remove(), 300);
-        }, 800);
+          if (s) { s.classList.add('hide'); setTimeout(() => s.remove(), 400); }
+        }, 700);
       });
-      // Regjistro Service Worker per PWA
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
       }
     </script>
   </body>
