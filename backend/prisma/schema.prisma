@@ -156,6 +156,7 @@ model Order {
 
   tavolinaNr    Int?        // per modulin opsional te tavolinave (e ardhshme)
 
+  metodaPageses String?   // cash | card
   printuarMe    DateTime?   // kur eshte printuar per here te pare
   numriPrintimeve Int       @default(0)
 
@@ -221,4 +222,20 @@ model DailyStockSnapshot {
 
   @@unique([productId, data])
   @@map("daily_stock_snapshots")
+}
+
+// ------------------------------------------------------------
+// TAVOLINAT
+// ------------------------------------------------------------
+model Table {
+  id        String   @id @default(uuid())
+  numri     Int      @unique
+  emri      String?  // p.sh. "VIP", "Ballkoni"
+  kapaciteti Int     @default(4)
+  pozicioniX Int     @default(0)
+  pozicioniY Int     @default(0)
+  aktiv     Boolean  @default(true)
+  krijuarMe DateTime @default(now())
+
+  @@map("tables")
 }

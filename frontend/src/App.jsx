@@ -41,18 +41,9 @@ export default function App() {
   if (!user || faza === 'pin') return <PinLogin onSuccess={onLoginSukses} />;
 
   if (faza === 'admin') {
-    const faqet = {
-      dashboard: <Dashboard />,
-      products: <Products />,
-      stock: <Stock />,
-      orders: <Orders />,
-      reports: <Reports />,
-      users: <Users />,
-      settings: <Settings />
-    };
+    const faqet = { dashboard: <Dashboard />, products: <Products />, stock: <Stock />, orders: <Orders />, reports: <Reports />, users: <Users />, settings: <Settings /> };
     return (
-      <AdminLayout faqjaAktive={adminFaqja} onNdryshoFaqjen={setAdminFaqja} onLogout={doLogout}
-      onRaport={() => setFaza("raport_kamerier")}>
+      <AdminLayout faqjaAktive={adminFaqja} onNdryshoFaqjen={setAdminFaqja} onLogout={doLogout}>
         {faqet[adminFaqja] || <Dashboard />}
       </AdminLayout>
     );
@@ -62,43 +53,31 @@ export default function App() {
     <Tavolinat
       onZgjidh={tav => { setTavolinaZgjedhur(tav); setFaza('pos'); }}
       onLogout={doLogout}
-      onRaport={() => setFaza("raport_kamerier")}
-      onMbyllFatura={r => {
-        setSuksesTeDhenat({ totali: r.totali, tavolina: r.tavolina?.numri, perdoruesi: user?.emri, metoda: r.metoda });
-        setFaza('sukses_fatura');
-      }}
+      onRaport={() => setFaza('raport_kamerier')}
+      onMbyllSukses={r => { setSuksesTeDhenat(r); setFaza('sukses_fatura'); }}
     />
   );
 
   if (faza === 'pos') return (
     <POSTouch
       tavolina={tavolinaZgjedhur}
-      onKthehu={() => setFaza('tavolina')}
-      onPorosiaSuksesshme={(totali, tavNr) => {
-        setSuksesTeDhenat({ totali, tavolina: tavNr, perdoruesi: user?.emri });
-        setFaza('sukses_porosi');
-      }}
+      onKthehu={() => setFaza('tavolina')} // kthehet te tavolinat, JO logout
+      onPorosiaSuksesshme={() => setFaza('tavolina')} // kthehet te tavolinat pas porosise
     />
   );
 
   if (faza === 'raport_kamerier') return (
-    <RaportiKamarjerit
-      onKthehu={() => setFaza('tavolina')}
-      onLogout={doLogout}
-      onRaport={() => setFaza("raport_kamerier")}
-    />
-  );
-
-  if (faza === 'sukses_porosi') return (
-    <Sukses totali={suksesTeDhenat?.totali} tavolina={suksesTeDhenat?.tavolina}
-      perdoruesi={suksesTeDhenat?.perdoruesi} metoda="cash"
-      onKthet={doLogout} />
+    <RaportiKamarjerit onKthehu={() => setFaza('tavolina')} onLogout={doLogout} />
   );
 
   if (faza === 'sukses_fatura') return (
-    <Sukses totali={suksesTeDhenat?.totali} tavolina={suksesTeDhenat?.tavolina}
-      perdoruesi={suksesTeDhenat?.perdoruesi} metoda={suksesTeDhenat?.metoda || 'cash'}
-      onKthet={doLogout} />
+    <Sukses
+      totali={suksesTeDhenat?.totali}
+      tavolina={suksesTeDhenat?.tavolina}
+      perdoruesi={suksesTeDhenat?.perdoruesi}
+      metoda={suksesTeDhenat?.metoda || 'cash'}
+      onKthet={doLogout} // pas fatures → logout (sigurim)
+    />
   );
 
   return <PinLogin onSuccess={onLoginSukses} />;

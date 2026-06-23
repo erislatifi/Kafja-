@@ -60,7 +60,7 @@ export default function POSTouch({ tavolina, onKthehu, onPorosiaSuksesshme }) {
         items: shporta.map(x => ({ productId: x.id, sasia: x.sasia })),
         tavolinaNr: tavolina?.numri
       });
-      onPorosiaSuksesshme(totali, tavolina?.numri);
+      onPorosiaSuksesshme();
     } catch (err) {
       setGabim(err.response?.data?.gabim || 'Gabim gjate ruajtjes.');
       setDukeRuajtur(false);
