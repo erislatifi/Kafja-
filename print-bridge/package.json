@@ -1,0 +1,16 @@
+{
+  "name": "kafe-nlagje-print-bridge",
+  "version": "1.0.0",
+  "description": "Print Bridge per Kafe Nlagje - lidh backend-in online me printerin termik lokal",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js",
+    "install-service": "node install-service.js"
+  },
+  "dependencies": {
+    "node-thermal-printer": "^4.4.4",
+    "node-windows": "^1.0.0-beta.8",
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5"
+  }
+}
