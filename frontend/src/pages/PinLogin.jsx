@@ -72,8 +72,13 @@ export default function PinLogin({ onSuccess }) {
 
   function shtoShifren(n) {
     if (duke_ngarkuar || pin.length >= 20) return;
-    setPin(p => p + n);
+    const pinRi = pin + n;
+    setPin(pinRi);
     setGabim('');
+    // Auto-login pas 4 shifrave
+    if (pinRi.length === 4) {
+      setTimeout(() => kontrollo(pinRi), 150);
+    }
   }
 
   async function kontrollo(kodi) {
