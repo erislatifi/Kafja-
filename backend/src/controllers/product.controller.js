@@ -96,7 +96,7 @@ async function krijoProduktin(req, res) {
 // PUT /api/products/:id
 async function perditesoProduktin(req, res) {
   try {
-    const { emri, categoryId, cmimiShitjes, cmimiBlerjes, njesia, alarmStokuMin, barkod, aktiv } = req.body;
+    const { emri, categoryId, cmimiShitjes, cmimiBlerjes, njesia, alarmStokuMin, barkod, aktiv, sasiaStok } = req.body;
 
     const produkti = await prisma.product.update({
       where: { id: req.params.id },
@@ -106,9 +106,10 @@ async function perditesoProduktin(req, res) {
         ...(cmimiShitjes !== undefined && { cmimiShitjes }),
         ...(cmimiBlerjes !== undefined && { cmimiBlerjes }),
         ...(njesia !== undefined && { njesia }),
-        ...(alarmStokuMin !== undefined && { alarmStokuMin }),
+        ...(alarmStokuMin !== undefined && { alarmStokuMin: Number(alarmStokuMin) }),
         ...(barkod !== undefined && { barkod }),
         ...(aktiv !== undefined && { aktiv }),
+        ...(sasiaStok !== undefined && { sasiaStok: Number(sasiaStok) }),
       },
       include: { category: true },
     });
